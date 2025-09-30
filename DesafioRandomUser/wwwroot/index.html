@@ -1,0 +1,116 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Relatório de Usuários</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <h1>Usuários</h1>
+
+  <div class="actions">
+    <button id="fetch">Gerar 3 aleatórios</button>
+    <button id="load">Carregar usuários</button>
+  </div>
+
+  <h2>Criar usuário manualmente</h2>
+  <form id="createForm">
+    <input type="text" id="nome" placeholder="Nome" required>
+    <input type="text" id="sobrenome" placeholder="Sobrenome" required>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="text" id="username" placeholder="Username" required>
+    <button type="submit">Criar</button>
+  </form>
+
+  <h2>Lista de usuários</h2>
+  <table id="tbl">
+    <thead>
+      <tr><th>Id</th><th>Nome</th><th>Email</th><th>Username</th><th>Ações</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+<script>
+const base = location.origin + '/api/usuarios';
+
+// Gerar 3 aleatórios
+document.getElementById('fetch').onclick = async () => {
+  const res = await fetch(base + '/fetch-random/3', { method: 'POST' });
+  if (res.ok) {
+    alert("3 usuários aleatórios gerados!");
+    document.getElementById('load').click();
+  } else {
+    alert("Erro ao gerar usuários aleatórios.");
+  }
+};
+
+// Carregar lista
+document.getElementById('load').onclick = async () => {
+  const res = await fetch(base);
+  const data = await res.json();
+  const tbody = document.querySelector('#tbl tbody');
+  tbody.innerHTML = '';
+  data.forEach(u => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${u.id}</td>
+      <td contenteditable="true">${u.nome} ${u.sobrenome}</td>
+      <td contenteditable="true">${u.email}</td>
+      <td contenteditable="true">${u.username}</td>
+      <td><button onclick="updateUser(${u.id}, this)">Salvar</button></td>`;
+    tbody.appendChild(tr);
+  });
+};
+
+// Criar usuário manualmente
+document.getElementById('createForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const body = {
+    nome: document.getElementById('nome').value,
+    sobrenome: document.getElementById('sobrenome').value,
+    email: document.getElementById('email').value,
+    username: document.getElementById('username').value
+  };
+
+  const res = await fetch(base, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+
+  if (res.ok) {
+    alert("Usuário criado!");
+    document.getElementById('createForm').reset();
+    document.getElementById('load').click();
+  } else {
+    alert("Erro ao criar usuário.");
+  }
+};
+
+// Atualizar usuário existente
+async function updateUser(id, button) {
+  const tr = button.closest('tr');
+  const [first, ...rest] = tr.children[1].innerText.trim().split(' ');
+  const body = {
+    nome: first || "",
+    sobrenome: rest.join(' '),
+    email: tr.children[2].innerText.trim(),
+    username: tr.children[3].innerText.trim()
+  };
+
+  const res = await fetch(base + '/' + id, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+
+  if (res.ok) {
+    alert("Usuário atualizado!");
+  } else {
+    alert("Erro ao atualizar usuário.");
+  }
+}
+</script>
+</body>
+</html>
